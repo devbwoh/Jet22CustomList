@@ -3,6 +3,9 @@ package kr.ac.kumoh.ce.prof01.jet22customlist
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -15,25 +18,33 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DismissDirection
+import androidx.compose.material3.DismissValue
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismiss
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.rememberDismissState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kr.ac.kumoh.ce.prof01.jet22customlist.ui.theme.Jet22CustomListTheme
@@ -101,21 +112,71 @@ fun SongList(paddingValues: PaddingValues) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SongItem() {
-    Card(
-        modifier = Modifier
-            .padding(8.dp)
-            .fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(8.dp),
-    ) {
-        Column(
-            Modifier.padding(8.dp)
-        ) {
-            SongTitle(UUID.randomUUID().toString())
-            SingerName(UUID.randomUUID().toString().substring(0, 8))
-        }
+    var deleted by remember {
+        mutableStateOf(false)
     }
+
+    val state = rememberDismissState(
+        confirmValueChange = {
+            if (it == DismissValue.DismissedToStart) {
+                // TODO: 데이터베이스에서 삭제
+                deleted = true
+            }
+            it == DismissValue.DismissedToStart
+        }
+    )
+
+    var expanded by remember {
+        mutableStateOf(false)
+    }
+
+    val title = UUID.randomUUID().toString()
+    val singer = UUID.randomUUID().toString()
+
+    SwipeToDismiss(
+        state = state,
+        background = {
+            val color = when(state.dismissDirection) {
+                DismissDirection.EndToStart ->
+                    MaterialTheme.colorScheme.secondaryContainer
+                else -> Color.Transparent
+            }
+
+            Box(
+                Modifier
+                    .padding(8.dp)
+                    .fillMaxSize()
+                    .background(color),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    "삭제 아이콘"
+                )
+            }
+        },
+        dismissContent = {
+            Card(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(8.dp),
+                onClick = { expanded = !expanded },
+            ) {
+                Column(
+                    Modifier.padding(8.dp)
+                ) {
+                    SongTitle(title)
+                    AnimatedVisibility(visible = expanded) {
+                        SingerName(singer)
+                    }
+                }
+            }
+        }
+    )
 }
 
 @Composable
