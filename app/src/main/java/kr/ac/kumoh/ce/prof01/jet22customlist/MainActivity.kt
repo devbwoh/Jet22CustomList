@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -47,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kr.ac.kumoh.ce.prof01.jet22customlist.ui.theme.Jet22CustomListTheme
 import java.util.UUID
 
@@ -103,18 +105,26 @@ fun SongScreen() {
 
 @Composable
 fun SongList(paddingValues: PaddingValues) {
+    val viewModel: SongViewModel = viewModel()
+    val songs = viewModel.songs
+
     LazyColumn(
         Modifier.padding(paddingValues)
     ) {
-        items(30) {
-            SongItem()
+        items(
+            items = songs,
+            key = { it.id }
+        ) {
+            SongItem(it)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SongItem() {
+fun SongItem(song: Song) {
+    val viewModel: SongViewModel = viewModel()
+
     var deleted by remember {
         mutableStateOf(false)
     }
@@ -123,6 +133,7 @@ fun SongItem() {
         confirmValueChange = {
             if (it == DismissValue.DismissedToStart) {
                 // TODO: 데이터베이스에서 삭제
+                viewModel.delete(song.id)
                 deleted = true
             }
             it == DismissValue.DismissedToStart
@@ -132,9 +143,6 @@ fun SongItem() {
     var expanded by remember {
         mutableStateOf(false)
     }
-
-    val title = UUID.randomUUID().toString()
-    val singer = UUID.randomUUID().toString()
 
     SwipeToDismiss(
         state = state,
@@ -169,9 +177,9 @@ fun SongItem() {
                 Column(
                     Modifier.padding(8.dp)
                 ) {
-                    SongTitle(title)
+                    SongTitle(song.title)
                     AnimatedVisibility(visible = expanded) {
-                        SingerName(singer)
+                        SingerName(song.singer)
                     }
                 }
             }
@@ -209,6 +217,8 @@ fun ButtonSongAdd(onOpenDialog: () -> Unit) {
 
 @Composable
 fun DialogSongAdd(onCloseDialog: () -> Unit) {
+    val viewModel: SongViewModel = viewModel()
+
     var title by remember { mutableStateOf("") }
     var singer by remember { mutableStateOf("") }
 
@@ -250,6 +260,7 @@ fun DialogSongAdd(onCloseDialog: () -> Unit) {
             Button(
                 onClick = {
                     // TODO: 데이터베이스에 삽입
+                    viewModel.add(title, singer)
                     onCloseDialog()
                 }
             ) {
